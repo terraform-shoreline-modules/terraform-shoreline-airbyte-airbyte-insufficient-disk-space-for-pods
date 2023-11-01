@@ -1,0 +1,162 @@
+{
+  "name": "airbyte_pods_using_too_much_disk_space_and_failing_to_create_new_connections_in_kubernetes_cluster",
+  "description": "This incident type involves Airbyte, a software tool running in a Kubernetes cluster, failing to create new connections as a result of Airbyte pods using too much disk space. This can cause disruptions to the functioning of the software and affect its ability to perform its intended tasks. A runbook needs to be written to clean unnecessary files on Airbyte pods and free up disk space to resolve this issue.",
+  "params": [
+    {
+      "name": "AIRBYTE_POD_PATH",
+      "value": ""
+    },
+    {
+      "name": "AIRBYTE_NAMESPACE",
+      "value": ""
+    },
+    {
+      "name": "NAMESPACE",
+      "value": ""
+    },
+    {
+      "name": "FILE_DIRECTORY",
+      "value": ""
+    },
+    {
+      "name": "AIRBYTE_POD_NAME",
+      "value": ""
+    },
+    {
+      "name": "POD_SELECTOR_LABELS",
+      "value": ""
+    },
+    {
+      "name": "K8S_CLUSTER_NAME",
+      "value": ""
+    }
+  ],
+  "cells": [
+    {
+      "name": "cell_1",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Airbyte pods using too much disk space and failing to create new connections in Kubernetes cluster.\nThis incident type involves Airbyte, a software tool running in a Kubernetes cluster, failing to create new connections as a result of Airbyte pods using too much disk space. This can cause disruptions to the functioning of the software and affect its ability to perform its intended tasks. A runbook needs to be written to clean unnecessary files on Airbyte pods and free up disk space to resolve this issue."
+    },
+    {
+      "name": "cell_2",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check the status of the Airbyte pods"
+    },
+    {
+      "name": "cell_3",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | limit=1 | random=1 | `kubectl get pods -n ${NAMESPACE}`"
+    },
+    {
+      "name": "cell_4",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Describe the Airbyte pods to get more detailed information about their current state"
+    },
+    {
+      "name": "cell_5",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | limit=1 | random=1 | `kubectl describe pod ${AIRBYTE_POD_NAME}`"
+    },
+    {
+      "name": "cell_6",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check the disk usage of the Airbyte pod in the Kubernetes cluster"
+    },
+    {
+      "name": "cell_7",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE | `df -h`"
+    },
+    {
+      "name": "cell_8",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## List the largest files in the Airbyte pod to identify files that are consuming the most disk space"
+    },
+    {
+      "name": "cell_9",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE | `du -ah ${AIRBYTE_POD_PATH} | sort -rh | head -n 20`"
+    },
+    {
+      "name": "cell_10",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check the logs of the Airbyte pod to identify any errors or anomalies that could be causing the issue"
+    },
+    {
+      "name": "cell_11",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | limit=1 | random=1 | `kubectl logs ${AIRBYTE_POD_NAME}`"
+    },
+    {
+      "name": "cell_12",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check the Kubernetes events to see if there were any recent events related to the Airbyte pods or the underlying infrastructure"
+    },
+    {
+      "name": "cell_13",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | limit=1 | random=1 | `kubectl get events -n ${NAMESPACE}`"
+    },
+    {
+      "name": "cell_14",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check the Kubernetes resource usage to identify any resource constraints that could be causing the issue"
+    },
+    {
+      "name": "cell_15",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | limit=1 | random=1 | `kubectl top pods -n ${NAMESPACE}`"
+    },
+    {
+      "name": "cell_16",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Print disk usage for each Airbyte pod"
+    },
+    {
+      "name": "cell_17",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | random=1 | limit=1 | invoke_pods_disk_usage($NAMESPACE, $POD_SELECTOR_LABELS)"
+    },
+    {
+      "name": "cell_18",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Identify and delete any unnecessary files or data that are consuming disk space in the Airbyte pods, for example /storage/airbyte-dev-logs"
+    },
+    {
+      "name": "cell_19",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | random=1 | limit=1 | invoke_disk_space_cleanup($AIRBYTE_NAMESPACE, $NAMESPACE, $FILE_DIRECTORY)"
+    },
+    {
+      "name": "cell_20",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Identify and delete any unnecessary old files that are consuming disk space in the Airbyte pod, for example /storage/airbyte-dev-logs"
+    },
+    {
+      "name": "cell_21",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | random=1 | limit=1 | invoke_delete_old_files($FILE_DIRECTORY, $AIRBYTE_POD_NAME)"
+    }
+  ]
+}
